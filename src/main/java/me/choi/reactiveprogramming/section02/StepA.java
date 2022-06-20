@@ -5,6 +5,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,31 +29,52 @@ public class StepA {
         Publisher<Integer> mapPubSecond = mapPub(mapPubFirst, s -> s * -1);
         Publisher<Integer> sumPub = sumPub(mapPubSecond);
         sumPub.subscribe(logSub());
+//        Publisher<Integer> reducePub = reducePub(publisher, 0, (BiFunction<Integer, Integer, Integer>)(a, b) -> a + b);
+//        reducePub.subscribe(logSub());
+    }
+
+    private static Publisher<Integer> reducePub(Publisher<Integer> publisher, int init, BiFunction<Integer, Integer, Integer> biFunction) {
+        return new Publisher<Integer>() {
+            @Override
+            public void subscribe(Subscriber<? super Integer> subscriber) {
+                publisher.subscribe(new DelegateSubscriber(subscriber));
+            }
+        };
     }
 
     private static Publisher<Integer> sumPub(Publisher<Integer> publisher) {
-        return subscriber -> publisher.subscribe(new DelegateSubscriber(subscriber) {
-            int sum = 0;
+        return new Publisher<Integer>() {
             @Override
-            public void onNext(Integer i) {
-                sum += i;
-            }
+            public void subscribe(Subscriber<? super Integer> subscriber) {
+                publisher.subscribe(new DelegateSubscriber(subscriber) {
+                    int sum = 0;
+                    @Override
+                    public void onNext(Integer i) {
+                        sum += i;
+                    }
 
-            @Override
-            public void onComplete() {
-                subscriber.onNext(sum);
-                subscriber.onComplete();
+                    @Override
+                    public void onComplete() {
+                        subscriber.onNext(sum);
+                        subscriber.onComplete();
+                    }
+                });
             }
-        });
+        };
     }
 
     private static Publisher<Integer> mapPub(Publisher<Integer> publisher, Function<Integer, Integer> function) {
-        return subscriber -> publisher.subscribe(new DelegateSubscriber(subscriber) {
+        return new Publisher<Integer>() {
             @Override
-            public void onNext(Integer i) {
-                subscriber.onNext(function.apply(i));
+            public void subscribe(Subscriber<? super Integer> subscriber) {
+                publisher.subscribe(new DelegateSubscriber(subscriber) {
+                    @Override
+                    public void onNext(Integer i) {
+                        subscriber.onNext(function.apply(i));
+                    }
+                });
             }
-        });
+        };
     }
 
     private static Subscriber<Integer> logSub() {
@@ -81,22 +103,27 @@ public class StepA {
     }
 
     private static Publisher<Integer> iterPub(Iterable<Integer> iterator) {
-        return subscriber -> subscriber.onSubscribe(new Subscription() {
+        return new Publisher<Integer>() {
             @Override
-            public void request(long n) {
-                try {
-                    iterator.forEach(subscriber::onNext);
-                    subscriber.onComplete();
-                } catch (Throwable throwable) {
-                    subscriber.onError(throwable);
-                }
-            }
+            public void subscribe(Subscriber<? super Integer> subscriber) {
+                subscriber.onSubscribe(new Subscription() {
+                    @Override
+                    public void request(long n) {
+                        try {
+                            iterator.forEach(subscriber::onNext);
+                            subscriber.onComplete();
+                        } catch (Throwable throwable) {
+                            subscriber.onError(throwable);
+                        }
+                    }
 
-            @Override
-            public void cancel() {
+                    @Override
+                    public void cancel() {
 
+                    }
+                });
             }
-        });
+        };
     }
 
 }
