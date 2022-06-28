@@ -11,4 +11,5 @@
 * [멀티플렉싱 기반의 서버](https://jwdeveloper.notion.site/03434efe1bc64345a474879a24f8c47a)
 * [select 함수의 이해와 서버의 구현](https://jwdeveloper.notion.site/select-dcde1194ec6e406db224bc0c775092ef)
 * [표준 입출력 함수의 장점](https://jwdeveloper.notion.site/323997b788734745a9aa9f735781651f)
+* [쓰레드의 이론적 이해](https://jwdeveloper.notion.site/816af633f74c4ec2a2ce92a9eea52eb3)
 
