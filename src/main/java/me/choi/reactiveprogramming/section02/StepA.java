@@ -25,19 +25,33 @@ public class StepA {
                 .limit(10)
                 .collect(Collectors.toList());
         Publisher<Integer> publisher = iterPub(iterator);
-        Publisher<Integer> mapPubFirst = mapPub(publisher, s -> s * 10);
-        Publisher<Integer> mapPubSecond = mapPub(mapPubFirst, s -> s * -1);
-        Publisher<Integer> sumPub = sumPub(mapPubSecond);
-        sumPub.subscribe(logSub());
-//        Publisher<Integer> reducePub = reducePub(publisher, 0, (BiFunction<Integer, Integer, Integer>)(a, b) -> a + b);
-//        reducePub.subscribe(logSub());
+
+//        Publisher<Integer> mapPubFirst = mapPub(publisher, s -> s * 10);
+//        Publisher<Integer> mapPubSecond = mapPub(mapPubFirst, s -> s * -1);
+//        Publisher<Integer> sumPub = sumPub(mapPubSecond);
+//        sumPub.subscribe(logSub());
+
+        Publisher<Integer> reducePub = reducePub(publisher, 0, (BiFunction<Integer, Integer, Integer>) (a, b) -> a + b);
+        reducePub.subscribe(logSub());
     }
 
     private static Publisher<Integer> reducePub(Publisher<Integer> publisher, int init, BiFunction<Integer, Integer, Integer> biFunction) {
         return new Publisher<Integer>() {
             @Override
             public void subscribe(Subscriber<? super Integer> subscriber) {
-                publisher.subscribe(new DelegateSubscriber(subscriber));
+                publisher.subscribe(new DelegateSubscriber(subscriber) {
+                    int result = init;
+                    @Override
+                    public void onNext(Integer i) {
+                        result = biFunction.apply(result, i);;
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        subscriber.onNext(result);
+                        subscriber.onComplete();
+                    }
+                });
             }
         };
     }
