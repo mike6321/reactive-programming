@@ -10,13 +10,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Reactive Streams : Operators
- *
- * Publisher -> [DATA 1] -> Operator1 -> [DATA 2] -> [Operator2] -> [DATA 3] -> Subscriber
- * 1. map (d1 -> f -> d2)
- * Publisher -> [DATA 1] -> MapPublisher -> [DATA 2] -> [Operator2] -> [DATA 3] -> Subscriber
- * */
 @Slf4j
 public class StepA {
 
@@ -25,24 +18,35 @@ public class StepA {
                 .limit(10)
                 .collect(Collectors.toList());
         Publisher<Integer> publisher = iterPub(iterator);
-
-//        Publisher<Integer> mapPubFirst = mapPub(publisher, s -> s * 10);
-//        Publisher<Integer> mapPubSecond = mapPub(mapPubFirst, s -> s * -1);
-//        Publisher<Integer> sumPub = sumPub(mapPubSecond);
-//        sumPub.subscribe(logSub());
-
-        Publisher<Integer> reducePub = reducePub(publisher, 0, (BiFunction<Integer, Integer, Integer>) (a, b) -> a + b);
+//        Publisher<String> mapPub = mapPub(publisher, s -> "[" + s + "]");
+//        mapPub.subscribe(logSub());
+        Publisher<StringBuilder> reducePub = reducePub(publisher, new StringBuilder(),
+                (a, b) -> a.append(b + ","));
         reducePub.subscribe(logSub());
     }
 
-    private static Publisher<Integer> reducePub(Publisher<Integer> publisher, int init, BiFunction<Integer, Integer, Integer> biFunction) {
-        return new Publisher<Integer>() {
+    private static <T, R> Publisher<R> mapPub(Publisher<T> publisher, Function<T, R> function) {
+        return new Publisher<R>() {
             @Override
-            public void subscribe(Subscriber<? super Integer> subscriber) {
-                publisher.subscribe(new DelegateSubscriber(subscriber) {
-                    int result = init;
+            public void subscribe(Subscriber<? super R> subscriber) {
+                publisher.subscribe(new DelegateSubscriber<T, R>(subscriber) {
                     @Override
-                    public void onNext(Integer i) {
+                    public void onNext(T i) {
+                        subscriber.onNext(function.apply(i));
+                    }
+                });
+            }
+        };
+    }
+
+    private static <T, R> Publisher<R> reducePub(Publisher<T> publisher, R init, BiFunction<R, T, R> biFunction) {
+        return new Publisher<R>() {
+            @Override
+            public void subscribe(Subscriber<? super R> subscriber) {
+                publisher.subscribe(new DelegateSubscriber<T, R>(subscriber) {
+                    R result = init;
+                    @Override
+                    public void onNext(T i) {
                         result = biFunction.apply(result, i);;
                     }
 
@@ -56,42 +60,7 @@ public class StepA {
         };
     }
 
-    private static Publisher<Integer> sumPub(Publisher<Integer> publisher) {
-        return new Publisher<Integer>() {
-            @Override
-            public void subscribe(Subscriber<? super Integer> subscriber) {
-                publisher.subscribe(new DelegateSubscriber(subscriber) {
-                    int sum = 0;
-                    @Override
-                    public void onNext(Integer i) {
-                        sum += i;
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        subscriber.onNext(sum);
-                        subscriber.onComplete();
-                    }
-                });
-            }
-        };
-    }
-
-    private static Publisher<Integer> mapPub(Publisher<Integer> publisher, Function<Integer, Integer> function) {
-        return new Publisher<Integer>() {
-            @Override
-            public void subscribe(Subscriber<? super Integer> subscriber) {
-                publisher.subscribe(new DelegateSubscriber(subscriber) {
-                    @Override
-                    public void onNext(Integer i) {
-                        subscriber.onNext(function.apply(i));
-                    }
-                });
-            }
-        };
-    }
-
-    private static Subscriber<Integer> logSub() {
+    private static <T> Subscriber<T> logSub() {
         return new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription s) {
@@ -100,7 +69,7 @@ public class StepA {
             }
 
             @Override
-            public void onNext(Integer i) {
+            public void onNext(T i) {
                 log.info("onNext :: {}", i);
             }
 
