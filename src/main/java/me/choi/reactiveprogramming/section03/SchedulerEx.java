@@ -40,7 +40,29 @@ public class SchedulerEx {
                     return "subOn - ";
                 }
             });
-            executorService.execute(() -> publisher.subscribe(sub));
+            executorService.execute(() -> publisher.subscribe(new Subscriber<Integer>() {
+                @Override
+                public void onSubscribe(Subscription s) {
+                    sub.onSubscribe(s);
+                }
+
+                @Override
+                public void onNext(Integer integer) {
+                    sub.onNext(integer);
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    sub.onError(t);
+                    executorService.shutdown();
+                }
+
+                @Override
+                public void onComplete() {
+                    sub.onComplete();
+                    executorService.shutdown();
+                }
+            }));
         };
 
         Publisher<Integer> pubOnPub = sub -> {
@@ -64,11 +86,13 @@ public class SchedulerEx {
                 @Override
                 public void onError(Throwable t) {
                     executorService.execute(() -> sub.onError(t));
+                    executorService.shutdown();
                 }
 
                 @Override
                 public void onComplete() {
                     executorService.execute(() -> sub.onComplete());
+                    executorService.shutdown();
                 }
             });
         };
