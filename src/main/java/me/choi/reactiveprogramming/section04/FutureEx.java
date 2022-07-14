@@ -50,7 +50,7 @@ public class FutureEx {
 //        step04(executorService);
 //        step05(executorService);
 //        step06(executorService);
-        step07(executorService);
+//        step07(executorService);
     }
 
     private static void step01(ExecutorService executorService) throws InterruptedException, ExecutionException {

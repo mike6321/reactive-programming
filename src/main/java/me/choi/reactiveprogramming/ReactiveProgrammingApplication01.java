@@ -9,7 +9,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
-public class ReactiveProgrammingApplication {
+public class ReactiveProgrammingApplication01 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ReactiveProgrammingApplication01.class, args);
+    }
 
     @RestController
     public static class Controller {
@@ -33,10 +37,7 @@ public class ReactiveProgrammingApplication {
                 }
             };
         }
-    }
 
-    public static void main(String[] args) {
-        SpringApplication.run(ReactiveProgrammingApplication.class, args);
     }
 
 }
