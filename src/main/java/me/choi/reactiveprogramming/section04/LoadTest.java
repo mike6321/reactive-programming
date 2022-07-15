@@ -18,7 +18,7 @@ public class LoadTest {
         ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         RestTemplate restTemplate = new RestTemplate();
-        final String url = "http://localhost:8080/callable";
+        final String url = "http://localhost:8080/deferred-result";
 
         StopWatch mainStopWatch = new StopWatch();
         mainStopWatch.start();
