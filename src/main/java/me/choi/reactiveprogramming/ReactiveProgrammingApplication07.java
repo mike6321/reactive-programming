@@ -10,6 +10,7 @@ import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.context.request.async.DeferredResult;
 
 @Slf4j
 @SpringBootApplication
@@ -24,16 +25,18 @@ public class ReactiveProgrammingApplication07 {
                         new NioEventLoopGroup(1)
                 )
         );
-        /**
-         * 비동기 작업을 위해 백그라운드에 요청당 스레드를 생성한다.
-         * (request 100 : -> thread : 100)
-         * */
 
         @GetMapping(URL)
-        public ListenableFuture<ResponseEntity<String>> rest(int idx) {
-            return asyncRestTemplate.getForEntity("http://localhost:8081/service?req={req}",
+        public DeferredResult<String> rest(int idx) {
+            DeferredResult<String> deferredResult = new DeferredResult<>();
+            ListenableFuture<ResponseEntity<String>> listenableFuture = asyncRestTemplate.getForEntity("http://localhost:8081/service?req={req}",
                     String.class,
                     "hello" + idx);
+            listenableFuture.addCallback(
+                    s -> deferredResult.setResult(s.getBody() + "/work"),
+                    e -> deferredResult.setResult(e.getMessage())
+            );
+            return deferredResult;
         }
 
     }
