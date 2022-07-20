@@ -65,29 +65,53 @@ public class ReactiveProgrammingApplication08 {
 
     }
 
-    public static class Completion {
-        private Completion next;
-        private Consumer<ResponseEntity<String>> consumer;
-        Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function;
+    public static class AcceptCompletion extends Completion {
 
-        public Completion(Consumer<ResponseEntity<String>> consumer) {
+        private Consumer<ResponseEntity<String>> consumer;
+
+        public AcceptCompletion(Consumer<ResponseEntity<String>> consumer) {
             this.consumer = consumer;
         }
 
-        public Completion(Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function) {
+        @Override
+        public void run(ResponseEntity<String> value) {
+            consumer.accept(value);
+        }
+
+    }
+
+    public static class ApplyCompletion extends Completion {
+
+        private Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function;
+
+        public ApplyCompletion(Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function) {
             this.function = function;
         }
+
+        @Override
+        public void run(ResponseEntity<String> value) {
+            ListenableFuture<ResponseEntity<String>> listenableFuture = function.apply(value);
+            listenableFuture.addCallback(
+                    s -> complete(s),
+                    e -> error(e)
+            );
+        }
+    }
+
+    public static class Completion {
+
+        private Completion next;
 
         public Completion() {
         }
 
         public void andAccept(Consumer<ResponseEntity<String>> consumer) {
-            Completion completion = new Completion(consumer);
+            Completion completion = new AcceptCompletion(consumer);
             this.next = completion;
         }
 
         public Completion andApply(Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function) {
-            Completion completion = new Completion(function);
+            Completion completion = new ApplyCompletion(function);
             this.next = completion;
             return completion;
         }
@@ -101,26 +125,18 @@ public class ReactiveProgrammingApplication08 {
             return completion;
         }
 
-        private void error(Throwable e) {
+        public void error(Throwable e) {
 
         }
 
-        private void complete(ResponseEntity<String> s) {
+        public void complete(ResponseEntity<String> s) {
             if (this.next != null) {
                 this.next.run(s);
             }
         }
 
-        private void run(ResponseEntity<String> value) {
-            if (this.consumer != null) {
-                this.consumer.accept(value);
-            } else if (function != null) {
-                ListenableFuture<ResponseEntity<String>> listenableFuture = function.apply(value);
-                listenableFuture.addCallback(
-                    s -> complete(s),
-                    e -> error(e)
-                );
-            }
+        public void run(ResponseEntity<String> value) {
+
         }
 
     }
