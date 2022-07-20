@@ -1,4 +1,4 @@
-package me.choi.reactiveprogramming.section04;
+package me.choi.reactiveprogramming;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StopWatch;
@@ -16,7 +16,7 @@ public class LoadTest {
         ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         RestTemplate restTemplate = new RestTemplate();
-        final String url = "http://localhost:8080/rest?idx={idx}";
+        final String url = "http://localhost:8080/rest02?idx={idx}";
 
         CyclicBarrier barrier = new CyclicBarrier(101);
 

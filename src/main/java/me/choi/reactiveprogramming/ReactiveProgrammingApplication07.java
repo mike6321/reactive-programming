@@ -24,9 +24,9 @@ import org.springframework.web.context.request.async.DeferredResult;
 public class ReactiveProgrammingApplication07 {
 
     @RestController
-    public static class MyController {
+    public static class MyController01 {
 
-        private static final String URL = "/rest";
+        private static final String URL = "/rest01";
         private final MyService myService;
         private AsyncRestTemplate asyncRestTemplate = new AsyncRestTemplate(
                 new Netty4ClientHttpRequestFactory(
@@ -34,7 +34,7 @@ public class ReactiveProgrammingApplication07 {
                 )
         );
 
-        public MyController(MyService myService) {
+        public MyController01(MyService myService) {
             this.myService = myService;
         }
 
@@ -73,14 +73,14 @@ public class ReactiveProgrammingApplication07 {
 
     @Service
     public static class MyService {
-        @Async(value = "myThreadPool")
+        @Async(value = "myThreadPool01")
         public ListenableFuture<String> work(String req) {
             return new AsyncResult<>(req + "/asyncwork");
         }
     }
 
     @Bean
-    public ThreadPoolTaskExecutor myThreadPool() {
+    public ThreadPoolTaskExecutor myThreadPool01() {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         threadPoolTaskExecutor.setCorePoolSize(1);
         threadPoolTaskExecutor.setMaxPoolSize(1);
