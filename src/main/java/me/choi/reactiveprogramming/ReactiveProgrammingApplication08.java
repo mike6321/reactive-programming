@@ -59,6 +59,7 @@ public class ReactiveProgrammingApplication08 {
                         String.class,
                         s.getBody())
                     )
+                    .andErrors(e -> deferredResult.setErrorResult(e.toString()))
                     .andAccept(s -> deferredResult.setResult(s.getBody()));
             return deferredResult;
         }
@@ -80,6 +81,27 @@ public class ReactiveProgrammingApplication08 {
 
     }
 
+    public static class ErrorsCompletion extends Completion {
+        private Consumer<Throwable> errorConsumer;
+
+        public ErrorsCompletion(Consumer<Throwable> errorConsumer) {
+            this.errorConsumer = errorConsumer;
+        }
+
+        @Override
+        public void run(ResponseEntity<String> value) {
+            if (next != null) {
+                next.run(value);
+            }
+        }
+
+        @Override
+        protected void error(Throwable e) {
+            errorConsumer.accept(e);
+        }
+
+    }
+
     public static class ApplyCompletion extends Completion {
 
         private Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function;
@@ -96,27 +118,34 @@ public class ReactiveProgrammingApplication08 {
                     e -> error(e)
             );
         }
+
     }
 
     public static class Completion {
 
-        private Completion next;
+        protected Completion next;
 
-        public Completion() {
+        protected Completion() {
         }
 
-        public void andAccept(Consumer<ResponseEntity<String>> consumer) {
+        private Completion andErrors(Consumer<Throwable> errorConsumer) {
+            Completion completion = new ErrorsCompletion(errorConsumer);
+            this.next = completion;
+            return completion;
+        }
+
+        private void andAccept(Consumer<ResponseEntity<String>> consumer) {
             Completion completion = new AcceptCompletion(consumer);
             this.next = completion;
         }
 
-        public Completion andApply(Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function) {
+        private Completion andApply(Function<ResponseEntity<String>, ListenableFuture<ResponseEntity<String>>> function) {
             Completion completion = new ApplyCompletion(function);
             this.next = completion;
             return completion;
         }
 
-        public static Completion from(ListenableFuture<ResponseEntity<String>> listenableFuture) {
+        private static Completion from(ListenableFuture<ResponseEntity<String>> listenableFuture) {
             Completion completion = new Completion();
             listenableFuture.addCallback(
                     completion::complete,
@@ -125,17 +154,19 @@ public class ReactiveProgrammingApplication08 {
             return completion;
         }
 
-        public void error(Throwable e) {
-
+        protected void error(Throwable e) {
+            if (this.next != null) {
+                this.next.error(e);
+            }
         }
 
-        public void complete(ResponseEntity<String> s) {
+        protected void complete(ResponseEntity<String> s) {
             if (this.next != null) {
                 this.next.run(s);
             }
         }
 
-        public void run(ResponseEntity<String> value) {
+        protected void run(ResponseEntity<String> value) {
 
         }
 
