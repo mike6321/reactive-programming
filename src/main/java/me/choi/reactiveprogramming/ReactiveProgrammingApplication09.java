@@ -4,12 +4,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.Netty4ClientHttpRequestFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,11 +53,7 @@ public class ReactiveProgrammingApplication09 {
                                         String.class,
                                         s.getBody()))
             )
-            .thenCompose(s ->
-                    toCompletableFuture(
-                            myService.work(s.getBody())
-                    )
-            )
+            .thenApplyAsync(s -> myService.work(s.getBody()))
             .thenAccept(deferredResult::setResult)
             .exceptionally(e -> {
                 deferredResult.setErrorResult(e.getMessage());
@@ -86,19 +79,11 @@ public class ReactiveProgrammingApplication09 {
 
     @Service
     public static class MyService {
-        @Async(value = "myThreadPool03")
-        public ListenableFuture<String> work(String req) {
-            return new AsyncResult<>(req + "/asyncwork");
-        }
-    }
 
-    @Bean
-    public ThreadPoolTaskExecutor myThreadPool03() {
-        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-        threadPoolTaskExecutor.setCorePoolSize(1);
-        threadPoolTaskExecutor.setMaxPoolSize(1);
-        threadPoolTaskExecutor.initialize();
-        return threadPoolTaskExecutor;
+        public String work(String req) {
+            return req + "/async-work";
+        }
+
     }
 
 }
